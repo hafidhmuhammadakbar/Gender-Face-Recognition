@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
+import com.google.firebase.ktx.Firebase;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
@@ -73,6 +74,10 @@ public class MainActivity extends AppCompatActivity {
 
         // init views
         frameLayout = findViewById(R.id.framelayout);
+
+        // init firebase storage
+        firebaseStorage = FirebaseStorage.getInstance();
+        storageReference = firebaseStorage.getReference();
         frameLayout.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -80,9 +85,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        String imageUrl = "https://www.houseofwellness.com.au/wp-content/uploads/2023/01/vanilla-girl-make-up.jpg";
-        String finalUrl = API_ENDPOINT + imageUrl;
-        networking(finalUrl);
+//        String imageUrl = "https://www.houseofwellness.com.au/wp-content/uploads/2023/01/vanilla-girl-make-up.jpg";
+//        String finalUrl = API_ENDPOINT + imageUrl;
+//        networking(finalUrl);
     }
 
     private void showImagePickDialog() {
@@ -196,8 +201,9 @@ public class MainActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK) {
             if (requestCode == IMAGE_PICK_GALLERY_CODE) {
                 // Image is picked from gallery, get uri of image
-                assert data != null;
+//                assert data != null;
                 imageUri = data.getData();
+                System.out.println(imageUri);
                  uploadPhoto(imageUri);
             } else if (requestCode == IMAGE_PICK_CAMERA_CODE) {
                  uploadPhoto(imageUri);
@@ -211,6 +217,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                 Task<Uri> uriTask = taskSnapshot.getStorage().getDownloadUrl();
+                while(!uriTask.isSuccessful());
                 Uri downloadUri = uriTask.getResult();
 
                 // getting url to pass in api
