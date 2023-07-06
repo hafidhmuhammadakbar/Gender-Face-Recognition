@@ -1,15 +1,19 @@
 package com.pab.genderfacerecognition;
 
+import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
@@ -31,6 +35,7 @@ import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
+import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -62,6 +67,13 @@ public class MainActivity extends AppCompatActivity {
 
     //views
     FrameLayout frameLayout;
+    TextView genderTextView;
+    ImageView avathar;
+
+    String gender;
+
+    ProgressDialog progressDialog;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +86,16 @@ public class MainActivity extends AppCompatActivity {
 
         // init views
         frameLayout = findViewById(R.id.framelayout);
+        genderTextView = findViewById(R.id.gender);
+        avathar = findViewById(R.id.avathar);
+
+        // init progress dialog
+        progressDialog = new ProgressDialog(this);
+        progressDialog.setTitle("Verifying Image");
+        progressDialog.setMessage("Please wait...");
+
+
+        genderTextView.setVisibility(View.GONE);
 
         // init firebase storage
         firebaseStorage = FirebaseStorage.getInstance();
@@ -216,6 +238,9 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        // show progress dialog
+        progressDialog.show();
+
         StorageReference storageRef = storageReference.child("image");
 
         storageRef.putFile(imageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
@@ -232,6 +257,28 @@ public class MainActivity extends AppCompatActivity {
 
                 // networking
                 networking(finalUrl);
+
+                // load image
+                try{
+                    Picasso.get().load(url).placeholder(R.drawable.ic_face).into(avathar);
+                } catch (Exception e){
+
+                }
+
+                // use Handler show progress dialog until api call finishes and get data
+                Handler handler = new Handler();
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        // set gender text view
+                        genderTextView.setText(gender.toUpperCase());
+                        // make gender text view visible
+                        genderTextView.setVisibility(View.VISIBLE);
+
+                        Toast.makeText(getApplicationContext(), "Verification Completed", Toast.LENGTH_SHORT).show();
+                        progressDialog.dismiss();
+                    }
+                }, 6000);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
@@ -267,40 +314,36 @@ public class MainActivity extends AppCompatActivity {
                 super.onSuccess(statusCode, headers, response);
                 Log.d("GenderFaceRecognition", "onSuccess: " + response.toString());
 
-                try {
-                    // Memeriksa status permintaan API
-                    String status = response.optString("status");
-                    if (status.equals("success")) {
-                        // Mendapatkan array hasil deteksi wajah
-                        JSONArray resultsArray = response.optJSONArray("results");
-                        if (resultsArray != null && resultsArray.length() > 0) {
-                            // Mengambil informasi usia dan gender untuk wajah pertama (indeks 0)
-                            JSONObject result = resultsArray.getJSONObject(0);
-
-                            // Mengambil informasi usia mayoritas
-                            JSONObject ageMajority = result.getJSONObject("age_majority");
-                            String ageDecision = ageMajority.optString("decision"); // mayor atau minor
-                            double ageConfidence = ageMajority.optDouble("confidence_score");
-
-                            // Mengambil informasi gender
-                            JSONObject gender = result.getJSONObject("gender");
-                            String genderDecision = gender.optString("decision"); // male atau female
-                            double genderConfidence = gender.optDouble("confidence_score");
-
-                            // Menampilkan hasil usia dan gender
-                            Log.d("GenderFaceRecognition", "Age: " + ageDecision + ", Confidence: " + ageConfidence);
-                            Log.d("GenderFaceRecognition", "Gender: " + genderDecision + ", Confidence: " + genderConfidence);
-
-                            // Gunakan nilai usia dan gender sesuai kebutuhan aplikasi Anda
-                        } else {
-                            Log.d("GenderFaceRecognition", "No face detected");
-                        }
-                    } else {
-                        Log.d("GenderFaceRecognition", "API request failed");
-                    }
-                } catch (JSONException e) {
+                try{
+                    gender = response.getJSONObject("face_detection").getJSONArray("results").getJSONObject(0).getJSONObject("gender").getString("decision");
+                } catch (Exception e){
                     e.printStackTrace();
+                    Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
+
+//                try {
+//                    // Memeriksa status permintaan API
+//                    String status = response.optString("status");
+//                    if (status.equals("success")) {
+//                        // Mendapatkan array hasil deteksi wajah
+//                        JSONArray resultsArray = response.optJSONArray("results");
+//                        if (resultsArray != null && resultsArray.length() > 0) {
+//                            // Mengambil informasi usia dan gender untuk wajah pertama (indeks 0)
+//                            JSONObject result = resultsArray.getJSONObject(0);
+//
+//                            // Mengambil informasi gender
+//                            gender = response.getJSONObject("face_detection").getJSONArray("results").getJSONObject(0).getJSONObject("gender").getString("decision");
+//
+//                        } else {
+//                            Toast.makeText(getApplicationContext(), "No face detected", Toast.LENGTH_SHORT).show();
+//                        }
+//                    } else {
+//                        Toast.makeText(getApplicationContext(), "API request failed", Toast.LENGTH_SHORT).show();
+//                    }
+//                } catch (JSONException e) {
+//                    e.printStackTrace();
+//                    Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
+//                }
             }
 
             @Override

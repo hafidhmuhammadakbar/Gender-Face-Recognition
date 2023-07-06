@@ -17,6 +17,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <ImageView
+            android:id="@+id/avathar"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:src="@drawable/ic_face"
@@ -32,6 +33,7 @@
     </FrameLayout>
     
     <TextView
+        android:id="@+id/text_upload"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
@@ -41,5 +43,17 @@
         app:layout_constraintTop_toBottomOf="@id/framelayout"
         app:layout_constraintEnd_toEndOf="parent"/>
 
+    <TextView
+        android:id="@+id/gender"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="MALE"
+        android:textSize="36sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toTopOf="@id/text_upload"
+        />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
