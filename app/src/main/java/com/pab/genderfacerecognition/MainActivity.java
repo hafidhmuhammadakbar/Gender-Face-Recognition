@@ -1,15 +1,19 @@
 package com.pab.genderfacerecognition;
 
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.provider.MediaStore;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import android.Manifest;
 import android.net.Uri;
@@ -54,6 +58,9 @@ public class MainActivity extends AppCompatActivity {
     Uri imageUri;
     String url;
 
+    //views
+    FrameLayout frameLayout;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -63,9 +70,51 @@ public class MainActivity extends AppCompatActivity {
         cameraPermissions = new String[]{android.Manifest.permission.CAMERA, android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
         storagePermissions = new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE};
 
+        // init views
+        frameLayout = findViewById(R.id.framelayout);
+        frameLayout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showImagePickDialog();
+            }
+        });
+
         String imageUrl = "https://www.houseofwellness.com.au/wp-content/uploads/2023/01/vanilla-girl-make-up.jpg";
         String finalUrl = API_ENDPOINT + imageUrl;
         networking(finalUrl);
+    }
+
+    private void showImagePickDialog() {
+        // show dialog  that contain camera and gallery for selecting image
+        String options[] = {"Camera", "Gallery"};
+
+        AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        alert.setTitle("Pick Image From");
+        alert.setItems(options, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                if(which == 0){
+                    // camera handling and check permission
+                    if(!checkCameraPermission()){
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            requestCameraPermission();
+                        }
+                    }else {
+                        pickFromCamera();
+                    }
+                }else if(which == 1){
+                    // gallery handling and check permission
+                    if(!checkStoragePermission()){
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            requestStoragePermission();
+                        }
+                    } else {
+                        pickFromGallery();
+                    }
+                }
+            }
+        });
+        alert.create().show();
     }
 
     // To check and ask permission when open the app
