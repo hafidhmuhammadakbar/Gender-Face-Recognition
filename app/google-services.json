@@ -1,0 +1,68 @@
+{
+  "project_info": {
+    "project_number": "255827360577",
+    "project_id": "mbuh-opo-iki",
+    "storage_bucket": "mbuh-opo-iki.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:255827360577:android:c9bb2d0abc5c959c9f7fc0",
+        "android_client_info": {
+          "package_name": "com.example.pab_genderageprediction"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "255827360577-8tspc52ormdirtaerljgv38eh9uppkeh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtHi6KYt9y_m4xm4j7SG4eex0q-6rb4IA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "255827360577-8tspc52ormdirtaerljgv38eh9uppkeh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:255827360577:android:9602a118f1ad31ab9f7fc0",
+        "android_client_info": {
+          "package_name": "com.pab.genderfacerecognition"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "255827360577-8tspc52ormdirtaerljgv38eh9uppkeh.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtHi6KYt9y_m4xm4j7SG4eex0q-6rb4IA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "255827360577-8tspc52ormdirtaerljgv38eh9uppkeh.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
