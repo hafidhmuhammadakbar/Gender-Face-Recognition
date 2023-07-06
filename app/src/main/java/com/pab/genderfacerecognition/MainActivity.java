@@ -203,17 +203,22 @@ public class MainActivity extends AppCompatActivity {
                 // Image is picked from gallery, get uri of image
 //                assert data != null;
                 imageUri = data.getData();
-                System.out.println(imageUri);
-                 uploadPhoto(imageUri);
+                uploadPhoto();
             } else if (requestCode == IMAGE_PICK_CAMERA_CODE) {
-                 uploadPhoto(imageUri);
+                uploadPhoto();
             }
         }
     }
 
-    private void uploadPhoto(Uri uri) {
+    private void uploadPhoto() {
+        if(imageUri==null){
+            Toast.makeText(getApplicationContext(), "Image URI is null", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         StorageReference storageRef = storageReference.child("image");
-        storageRef.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+
+        storageRef.putFile(imageUri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
             @Override
             public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
                 Task<Uri> uriTask = taskSnapshot.getStorage().getDownloadUrl();
@@ -226,6 +231,7 @@ public class MainActivity extends AppCompatActivity {
                 String finalUrl = API_ENDPOINT + url;
 
                 // networking
+                networking(finalUrl);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
@@ -249,7 +255,7 @@ public class MainActivity extends AppCompatActivity {
     private void pickFromGallery() {
         Intent galleryIntent = new Intent(Intent.ACTION_PICK);
         galleryIntent.setType("image/*");
-        startActivityForResult(galleryIntent, IMAGE_PICK_CAMERA_CODE);
+        startActivityForResult(galleryIntent, IMAGE_PICK_GALLERY_CODE);
     }
 
     // API Networking
