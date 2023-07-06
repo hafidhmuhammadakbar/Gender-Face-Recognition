@@ -17,6 +17,12 @@ import android.net.Uri;
 import android.os.Bundle;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
+
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.StorageReference;
+import com.google.firebase.storage.UploadTask;
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.JsonHttpResponseHandler;
 
@@ -37,11 +43,16 @@ public class MainActivity extends AppCompatActivity {
     private static final int IMAGE_PICK_CAMERA_CODE = 300;
     private static final int IMAGE_PICK_GALLERY_CODE = 400;
 
+    // storage
+    StorageReference storageReference;
+    FirebaseStorage firebaseStorage;
+
     // Array of permission to be requested
     String[] cameraPermissions;
     String[] storagePermissions;
 
     Uri imageUri;
+    String url;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -137,11 +148,29 @@ public class MainActivity extends AppCompatActivity {
                 // Image is picked from gallery, get uri of image
                 assert data != null;
                 imageUri = data.getData();
-                // uploadPhoto(imageUri);
+                 uploadPhoto(imageUri);
             } else if (requestCode == IMAGE_PICK_CAMERA_CODE) {
-                // uploadPhoto(imageUri);
+                 uploadPhoto(imageUri);
             }
         }
+    }
+
+    private void uploadPhoto(Uri uri) {
+        StorageReference storageRef = storageReference.child("image");
+        storageRef.putFile(uri).addOnSuccessListener(new OnSuccessListener<UploadTask.TaskSnapshot>() {
+            @Override
+            public void onSuccess(UploadTask.TaskSnapshot taskSnapshot) {
+                Task<Uri> uriTask = taskSnapshot.getStorage().getDownloadUrl();
+                Uri downloadUri = uriTask.getResult();
+
+                // getting url to pass in api
+                url = downloadUri.toString();
+
+                String finalUrl = API_ENDPOINT + url;
+
+                // networking
+            }
+        });
     }
 
     private void pickFromCamera() {
