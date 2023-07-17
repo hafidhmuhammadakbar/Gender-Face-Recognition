@@ -88,6 +88,8 @@ public class MainActivity extends AppCompatActivity {
 
     ProgressDialog progressDialog;
 
+    Handler handler = new Handler();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -335,32 +337,8 @@ public class MainActivity extends AppCompatActivity {
                 try{
                     Picasso.get().load(url).placeholder(R.drawable.ic_face).into(avathar);
                 } catch (Exception e){
-
+                    Toast.makeText(getApplicationContext(), "Failed to add Image to Screen", Toast.LENGTH_SHORT).show();
                 }
-
-                // use Handler show progress dialog until api call finishes and get data
-                Handler handler = new Handler();
-                handler.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        if(gender != null){
-                            // set gender text view
-                            genderTextView.setText(gender.toUpperCase());
-
-                            // make gender text view visible
-                            genderTextView.setVisibility(View.VISIBLE);
-
-                            Toast.makeText(getApplicationContext(), "Verification Completed", Toast.LENGTH_SHORT).show();
-                        } else {
-                            // set gender text view
-                            genderTextView.setText("UNKNOWN");
-
-                            // make gender text view visible
-                            genderTextView.setVisibility(View.VISIBLE);
-                        }
-                        progressDialog.dismiss();
-                    }
-                }, 6000);
             }
         }).addOnFailureListener(new OnFailureListener() {
             @Override
@@ -415,6 +393,29 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                     Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
+
+                // UI update and progress dialog dismissal
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        if(gender != null){
+                            // set gender text view
+                            genderTextView.setText(gender.toUpperCase());
+
+                            // make gender text view visible
+                            genderTextView.setVisibility(View.VISIBLE);
+
+                            Toast.makeText(getApplicationContext(), "Verification Completed", Toast.LENGTH_SHORT).show();
+                        } else {
+                            // set gender text view
+                            genderTextView.setText("UNKNOWN");
+
+                            // make gender text view visible
+                            genderTextView.setVisibility(View.VISIBLE);
+                        }
+                        progressDialog.dismiss();
+                    }
+                });
             }
 
             @Override
