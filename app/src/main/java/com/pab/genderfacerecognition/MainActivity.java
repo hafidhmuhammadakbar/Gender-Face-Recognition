@@ -65,8 +65,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int IMAGE_PICK_CAMERA_CODE = 300;
     private static final int IMAGE_PICK_GALLERY_CODE = 400;
 
-    private static final int IMAGE_PICPURIFY_MAX_WIDTH = 300;
-    private static final int IMAGE_PICPURIFY_MAX_HEIGHT = 300;
+    private static final int IMAGE_PICPURIFY_MAX_WIDTH = 1200;
+    private static final int IMAGE_PICPURIFY_MAX_HEIGHT = 1200;
 
     // storage
     StorageReference storageReference;
