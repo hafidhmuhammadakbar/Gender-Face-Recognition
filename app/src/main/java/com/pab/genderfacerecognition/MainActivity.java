@@ -2,6 +2,7 @@ package com.pab.genderfacerecognition;
 
 import android.app.ProgressDialog;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -44,6 +45,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -59,6 +61,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int STORAGE_REQUEST_CODE = 200;
     private static final int IMAGE_PICK_CAMERA_CODE = 300;
     private static final int IMAGE_PICK_GALLERY_CODE = 400;
+
+    private static final int IMAGE_PICPURIFY_MAX_WIDTH = 4096;
+    private static final int IMAGE_PICPURIFY_MAX_HEIGHT = 4096;
 
     // storage
     StorageReference storageReference;
@@ -231,27 +236,43 @@ public class MainActivity extends AppCompatActivity {
         // Image picked from camera or gallery will be received here
         if (resultCode == RESULT_OK) {
             if (requestCode == IMAGE_PICK_GALLERY_CODE) {
-                // Image is picked from gallery, get uri of image
-//                assert data != null;
+                // Image is picked from gallery, get Uri of the image
                 imageUri = data.getData();
-                uploadPhoto();
-            } else if (requestCode == IMAGE_PICK_CAMERA_CODE) {
-                // uploadPhoto();
                 try {
-                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
-                    Bitmap rotatedBitmap = rotateImage(bitmap, 270); // Specify the rotation angle here (90 for left, -90 for right)
+                    // Resize the image
+                    Bitmap resizedBitmap = resizeImage(imageUri, 4096, 4096);
+
+                    // Update the imageUri with the resized image
+                    imageUri = getImageUri(getApplicationContext(), resizedBitmap);
+
+                    // Upload the resized image
+                    uploadPhoto();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Toast.makeText(getApplicationContext(), "Failed to resize image", Toast.LENGTH_SHORT).show();
+                }
+            } else if (requestCode == IMAGE_PICK_CAMERA_CODE) {
+                try {
+                    // Resize the captured image
+                    Bitmap resizedBitmap = resizeImage(imageUri, 4096, 4096);
+                    Bitmap rotatedBitmap = rotateImage(resizedBitmap, 270); // Specify the rotation angle here (90 for left, -90 for right)
 
                     // Save the rotated bitmap to the original imageUri
                     OutputStream outputStream = getContentResolver().openOutputStream(imageUri);
                     rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
                     outputStream.close();
+                    // Update the imageUri with the resized image
+                    imageUri = getImageUri(getApplicationContext(), resizedBitmap);
 
+                    // Upload the resized image
                     uploadPhoto();
                 } catch (IOException e) {
                     e.printStackTrace();
+                    Toast.makeText(getApplicationContext(), "Failed to resize image", Toast.LENGTH_SHORT).show();
                 }
             }
         }
+
     }
 
     private Bitmap rotateImage(Bitmap bitmap, float degrees) {
@@ -401,5 +422,33 @@ public class MainActivity extends AppCompatActivity {
                 Log.d("GenderFaceRecognition", "onFailure: " + statusCode);
             }
         });
+    }
+    private Bitmap resizeImage(Uri uri, int maxWidth, int maxHeight) throws IOException {
+        // Load the image from the given Uri
+        Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), uri);
+
+        // Calculate the aspect ratio to maintain the image's original proportions
+        int originalWidth = bitmap.getWidth();
+        int originalHeight = bitmap.getHeight();
+        float scaleFactor = Math.min((float) maxWidth / originalWidth, (float) maxHeight / originalHeight);
+
+        // Calculate the new dimensions for the resized image
+        int resizedWidth = Math.round(originalWidth * scaleFactor);
+        int resizedHeight = Math.round(originalHeight * scaleFactor);
+
+        // Create the resized bitmap
+        Bitmap resizedBitmap = Bitmap.createScaledBitmap(bitmap, resizedWidth, resizedHeight, true);
+
+        // Recycle the original bitmap to free up memory
+        bitmap.recycle();
+
+        return resizedBitmap;
+    }
+
+    private Uri getImageUri(Context context, Bitmap bitmap) {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
+        String path = MediaStore.Images.Media.insertImage(context.getContentResolver(), bitmap, "Image", null);
+        return Uri.parse(path);
     }
 }
