@@ -5,6 +5,9 @@ import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Matrix;
+import android.media.ExifInterface;
 import android.os.Build;
 import android.os.Handler;
 import android.provider.MediaStore;
@@ -40,6 +43,9 @@ import com.squareup.picasso.Picasso;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.IOException;
+import java.io.OutputStream;
 
 import cz.msebera.android.httpclient.Header;
 
@@ -113,6 +119,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showImagePickDialog() {
+        genderTextView.setVisibility(View.GONE);
+        gender = null;
+
         // show dialog  that contain camera and gallery for selecting image
         String options[] = {"Camera", "Gallery"};
 
@@ -227,9 +236,49 @@ public class MainActivity extends AppCompatActivity {
                 imageUri = data.getData();
                 uploadPhoto();
             } else if (requestCode == IMAGE_PICK_CAMERA_CODE) {
-                uploadPhoto();
+                // uploadPhoto();
+                try {
+                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), imageUri);
+                    Bitmap rotatedBitmap = rotateImage(bitmap, 270); // Specify the rotation angle here (90 for left, -90 for right)
+
+                    // Save the rotated bitmap to the original imageUri
+                    OutputStream outputStream = getContentResolver().openOutputStream(imageUri);
+                    rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+                    outputStream.close();
+
+                    uploadPhoto();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             }
         }
+    }
+
+    private Bitmap rotateImage(Bitmap bitmap, float degrees) {
+        Matrix matrix = new Matrix();
+        matrix.postRotate(degrees);
+
+        // Correct the orientation of the image based on Exif data (if available)
+        try {
+            ExifInterface exifInterface = new ExifInterface(imageUri.getPath());
+            int orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_UNDEFINED);
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    degrees += 270;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    degrees += 180;
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    degrees += 90;
+                    break;
+            }
+            matrix.postRotate(degrees);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
     }
 
     private void uploadPhoto() {
@@ -270,12 +319,21 @@ public class MainActivity extends AppCompatActivity {
                 handler.postDelayed(new Runnable() {
                     @Override
                     public void run() {
-                        // set gender text view
-                        genderTextView.setText(gender.toUpperCase());
-                        // make gender text view visible
-                        genderTextView.setVisibility(View.VISIBLE);
+                        if(gender != null){
+                            // set gender text view
+                            genderTextView.setText(gender.toUpperCase());
 
-                        Toast.makeText(getApplicationContext(), "Verification Completed", Toast.LENGTH_SHORT).show();
+                            // make gender text view visible
+                            genderTextView.setVisibility(View.VISIBLE);
+
+                            Toast.makeText(getApplicationContext(), "Verification Completed", Toast.LENGTH_SHORT).show();
+                        } else {
+                            // set gender text view
+                            genderTextView.setText("UNKNOWN");
+
+                            // make gender text view visible
+                            genderTextView.setVisibility(View.VISIBLE);
+                        }
                         progressDialog.dismiss();
                     }
                 }, 6000);
@@ -289,17 +347,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void pickFromCamera() {
+        imageUri = null;
         ContentValues values = new ContentValues();
         values.put(MediaStore.Images.Media.TITLE, "Temp Pic");
         values.put(MediaStore.Images.Media.DESCRIPTION, "Temp Description");
 
-        imageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+//        imageUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        imageUri = getApplicationContext().getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+
         Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
         startActivityForResult(cameraIntent, IMAGE_PICK_CAMERA_CODE);
     }
 
     private void pickFromGallery() {
+        imageUri = null;
         Intent galleryIntent = new Intent(Intent.ACTION_PICK);
         galleryIntent.setType("image/*");
         startActivityForResult(galleryIntent, IMAGE_PICK_GALLERY_CODE);
@@ -307,43 +369,28 @@ public class MainActivity extends AppCompatActivity {
 
     // API Networking
     private void networking(String url) {
+        Log.d("GenderFaceRecognition", "onSuccess: Access Networking");
         AsyncHttpClient client = new AsyncHttpClient();
         client.get(url, new JsonHttpResponseHandler() {
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 super.onSuccess(statusCode, headers, response);
                 Log.d("GenderFaceRecognition", "onSuccess: " + response.toString());
+                gender = null;
 
                 try{
-                    gender = response.getJSONObject("face_detection").getJSONArray("results").getJSONObject(0).getJSONObject("gender").getString("decision");
+                    String status = response.optString("status");
+                    if ("failure".equals(status)) {
+                        gender = "failed to detect";
+                        Toast.makeText(getApplicationContext(), "API request failed", Toast.LENGTH_SHORT).show();
+                    } else {
+                        gender = response.getJSONObject("face_detection").getJSONArray("results").getJSONObject(0).getJSONObject("gender").getString("decision");
+                    }
                 } catch (Exception e){
+                    gender = "failed to detect";
                     e.printStackTrace();
                     Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
                 }
-
-//                try {
-//                    // Memeriksa status permintaan API
-//                    String status = response.optString("status");
-//                    if (status.equals("success")) {
-//                        // Mendapatkan array hasil deteksi wajah
-//                        JSONArray resultsArray = response.optJSONArray("results");
-//                        if (resultsArray != null && resultsArray.length() > 0) {
-//                            // Mengambil informasi usia dan gender untuk wajah pertama (indeks 0)
-//                            JSONObject result = resultsArray.getJSONObject(0);
-//
-//                            // Mengambil informasi gender
-//                            gender = response.getJSONObject("face_detection").getJSONArray("results").getJSONObject(0).getJSONObject("gender").getString("decision");
-//
-//                        } else {
-//                            Toast.makeText(getApplicationContext(), "No face detected", Toast.LENGTH_SHORT).show();
-//                        }
-//                    } else {
-//                        Toast.makeText(getApplicationContext(), "API request failed", Toast.LENGTH_SHORT).show();
-//                    }
-//                } catch (JSONException e) {
-//                    e.printStackTrace();
-//                    Toast.makeText(getApplicationContext(), e.getMessage(), Toast.LENGTH_SHORT).show();
-//                }
             }
 
             @Override
