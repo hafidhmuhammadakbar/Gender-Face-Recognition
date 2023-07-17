@@ -267,7 +267,7 @@ public class MainActivity extends AppCompatActivity {
                     rotatedBitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
                     outputStream.close();
                     // Update the imageUri with the resized image
-                    imageUri = getImageUri(getApplicationContext(), resizedBitmap);
+                    imageUri = getImageUri(getApplicationContext(), rotatedBitmap);
 
                     // Upload the resized image
                     uploadPhoto();
