@@ -48,6 +48,9 @@ import org.json.JSONObject;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import cz.msebera.android.httpclient.Header;
 
@@ -62,8 +65,8 @@ public class MainActivity extends AppCompatActivity {
     private static final int IMAGE_PICK_CAMERA_CODE = 300;
     private static final int IMAGE_PICK_GALLERY_CODE = 400;
 
-    private static final int IMAGE_PICPURIFY_MAX_WIDTH = 4096;
-    private static final int IMAGE_PICPURIFY_MAX_HEIGHT = 4096;
+    private static final int IMAGE_PICPURIFY_MAX_WIDTH = 300;
+    private static final int IMAGE_PICPURIFY_MAX_HEIGHT = 300;
 
     // storage
     StorageReference storageReference;
@@ -240,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
                 imageUri = data.getData();
                 try {
                     // Resize the image
-                    Bitmap resizedBitmap = resizeImage(imageUri, 4096, 4096);
+                    Bitmap resizedBitmap = resizeImage(imageUri, IMAGE_PICPURIFY_MAX_WIDTH, IMAGE_PICPURIFY_MAX_HEIGHT);
 
                     // Update the imageUri with the resized image
                     imageUri = getImageUri(getApplicationContext(), resizedBitmap);
@@ -254,7 +257,7 @@ public class MainActivity extends AppCompatActivity {
             } else if (requestCode == IMAGE_PICK_CAMERA_CODE) {
                 try {
                     // Resize the captured image
-                    Bitmap resizedBitmap = resizeImage(imageUri, 4096, 4096);
+                    Bitmap resizedBitmap = resizeImage(imageUri, IMAGE_PICPURIFY_MAX_WIDTH, IMAGE_PICPURIFY_MAX_HEIGHT);
                     Bitmap rotatedBitmap = rotateImage(resizedBitmap, 270); // Specify the rotation angle here (90 for left, -90 for right)
 
                     // Save the rotated bitmap to the original imageUri
@@ -448,7 +451,11 @@ public class MainActivity extends AppCompatActivity {
     private Uri getImageUri(Context context, Bitmap bitmap) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bytes);
-        String path = MediaStore.Images.Media.insertImage(context.getContentResolver(), bitmap, "Image", null);
+
+        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "IMG_" + timeStamp + ".jpg";
+
+        String path = MediaStore.Images.Media.insertImage(context.getContentResolver(), bitmap, imageFileName, null);
         return Uri.parse(path);
     }
 }
